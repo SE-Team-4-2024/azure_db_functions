@@ -16,7 +16,7 @@ public class userInformationServices
         dbConnection.OpenConnection();
     }
 
-    public async Task<string> GetOrCreateUser(string deviceID, string name, string profilePic)
+    public async Task<string> GetOrCreateUser(string deviceID, string name, string profilePic, bool isMusicEnabledFlag, bool isSoundEnabledFlag)
     {
 
         JObject userObject = await IsExistingUserBasedOnDeviceIDAndName(deviceID, name);
@@ -28,7 +28,7 @@ public class userInformationServices
         {
             int profileDp = int.Parse(profilePic);
             await removeOtherPrimaryUser(deviceID);
-            userObject = await CreateUser(deviceID, name, profileDp);
+            userObject = await CreateUser(deviceID, name, profileDp, isMusicEnabledFlag, isSoundEnabledFlag);
             return userObject["UserID"]?.ToString() ?? ""; // Convert JToken to string, or return empty string if null
         }
     }
@@ -62,19 +62,19 @@ public class userInformationServices
     }
 
 
-    private async Task<JObject> CreateUser(string deviceID, string name, int profilePic)
+    private async Task<JObject> CreateUser(string deviceID, string name, int profilePic, bool isMusicEnabledFlag, bool isSoundEnabledFlag)
     {
         JObject userObject = new JObject();
         string UserID = deviceID + "_" + name;
         userObject["UserID"] = UserID;
         userObject["DeviceID"] = deviceID;
         userObject["Name"] = name;
-        userObject["IsSoundEnabled"] = 1;
-        userObject["IsMusicEnabled"] = 1;
+        userObject["IsSoundEnabled"] =  isSoundEnabledFlag ? 1 : 0;
+        userObject["IsMusicEnabled"] = isMusicEnabledFlag ? 1 : 0;;
         userObject["Age"] = 9;
         userObject["ProfilePicture"] = profilePic != 0 ? profilePic : 1;
         string query = $"INSERT INTO Playerinfo (UserID, DeviceID, Name, IsSoundEnabled, IsMusicEnabled, Age, ProfilePicture, IsPrimaryUser) " +
-               $"VALUES ('{UserID}', '{deviceID}', '{userObject["Name"]}', '{userObject["IsSoundEnabled"]}', '{userObject["IsMusicEnabled"]}', '{userObject["Age"]}', '{userObject["ProfilePicture"]}', 1)";
+               $"VALUES ('{UserID}', '{deviceID}', '{userObject["Name"]}', {userObject["IsSoundEnabled"]}, {userObject["IsMusicEnabled"]}, {userObject["Age"]}, '{userObject["ProfilePicture"]}', 1)";
         await dbConnection.ExecuteQueryAsync(query);
         return userObject;
     }
@@ -125,6 +125,21 @@ public class userInformationServices
         await dbConnection.ExecuteQueryAsync(query);
     }
 
+    public async Task UpdateUserDetails(string userID, string name, bool music, bool sound, string profilePicture)
+    {
+
+        JObject userObject = await IsExistingUserBasedOnUserID(userID);
+
+        if (!(userObject != null && userObject.HasValues))
+        {
+            throw new Exception("Error: Invalid user");
+        }
+        int musicEnabled = music ? 1 : 0;
+        int soundEnabled = sound ? 1 : 0;
+       string query = $"UPDATE Playerinfo SET Name = '{name}', IsMusicEnabled = {musicEnabled}, IsSoundEnabled = {soundEnabled}, ProfilePicture = '{profilePicture}' WHERE UserID = '{userID}'";
+        await dbConnection.ExecuteQueryAsync(query);
+    }
+
     public async Task UpdateAge(string userID, int age)
     {
 
@@ -134,7 +149,7 @@ public class userInformationServices
         {
             throw new Exception("Error: Invalid user");
         }
-        string query = $"UPDATE Playerinfo SET Age = '{age}' WHERE UserID = '{userID}'";
+        string query = $"UPDATE Playerinfo SET Age = {age} WHERE UserID = '{userID}'";
         await dbConnection.ExecuteQueryAsync(query);
     }
 
@@ -147,7 +162,7 @@ public class userInformationServices
             throw new Exception("Error: Invalid user");
         }
         int musicEnabled = music ? 1 : 0;
-        string query = $"UPDATE Playerinfo SET IsMusicEnabled = '{musicEnabled}' WHERE UserID = '{userID}'";
+        string query = $"UPDATE Playerinfo SET IsMusicEnabled = {musicEnabled} WHERE UserID = '{userID}'";
         await dbConnection.ExecuteQueryAsync(query);
     }
 
@@ -160,7 +175,7 @@ public class userInformationServices
             throw new Exception("Error: Invalid user");
         }
         int soundEnabled = sound ? 1 : 0;
-        string query = $"UPDATE Playerinfo SET IsSoundEnabled = '{soundEnabled}' WHERE UserID = '{userID}'";
+        string query = $"UPDATE Playerinfo SET IsSoundEnabled = {soundEnabled} WHERE UserID = '{userID}'";
         await dbConnection.ExecuteQueryAsync(query);
     }
 

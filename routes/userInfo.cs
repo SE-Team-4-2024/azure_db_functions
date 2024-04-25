@@ -28,6 +28,10 @@ public class UserInformationRouter
             string? deviceID = req.Query["deviceID"];
             string? name = req.Query["name"];
             string? profilePic = req.Query["profilePicture"] ?? "1";
+            string? isMusicEnabled = req.Query["isMusicEnabled"] ?? "1";
+            bool isMusicEnabledFlag = bool.Parse(isMusicEnabled);
+            string? isSoundEnabled = req.Query["isSoundEnabled"] ?? "1";
+            bool isSoundEnabledFlag = bool.Parse(isSoundEnabled);
 
             if (string.IsNullOrEmpty(deviceID) || string.IsNullOrEmpty(name))
             {
@@ -36,7 +40,7 @@ public class UserInformationRouter
                 return new BadRequestObjectResult(errorJsonResponse);
             }
 
-            string userID = await _userInfoService.GetOrCreateUser(deviceID, name, profilePic);
+            string userID = await _userInfoService.GetOrCreateUser(deviceID, name, profilePic, isMusicEnabledFlag, isSoundEnabledFlag);
 
             return new ContentResult
             {
@@ -84,7 +88,7 @@ public class UserInformationRouter
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing the request");
-            return new BadRequestObjectResult("Error: Invalid request.");
+            return new BadRequestObjectResult(ex);
         }
     }
 
@@ -184,6 +188,51 @@ public class UserInformationRouter
             return new ContentResult
             {
                 Content = "Updated Name Successfully...",
+                ContentType = "application/json",
+                StatusCode = 200
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing the request");
+            return new BadRequestObjectResult("Error: Invalid request.");
+        }
+    }
+
+    [Function("updateUserDetails")]
+    public async Task<IActionResult> updateUserDetails(
+        [HttpTrigger(AuthorizationLevel.Function, "put", Route = "user/{userID}/updateDetails")] HttpRequestData req, string userID)
+    {
+
+        try
+        {
+            _logger.LogInformation("Processing a request to update a name for userID");
+            string? name = req.Query["name"];
+            string? profilePicture = req.Query["profilePicture"] ?? "1";
+            string? isMusicEnabled = req.Query["isMusicEnabled"];
+            bool isMusicEnabledFlag = bool.Parse(isMusicEnabled);
+            string? isSoundEnabled = req.Query["isSoundEnabled"];
+            bool isSoundEnabledFlag = bool.Parse(isSoundEnabled);
+
+            if (string.IsNullOrEmpty(userID))
+            {
+                var errorResponse = new { message = "Error: userID is required." };
+                string errorJsonResponse = JsonConvert.SerializeObject(errorResponse);
+                return new BadRequestObjectResult(errorJsonResponse);
+            }
+
+            if (string.IsNullOrEmpty(name))
+            {
+                var errorResponse = new { message = "Error: name is required." };
+                string errorJsonResponse = JsonConvert.SerializeObject(errorResponse);
+                return new BadRequestObjectResult(errorJsonResponse);
+            }
+
+            await _userInfoService.UpdateUserDetails(userID, name, isMusicEnabledFlag, isSoundEnabledFlag, profilePicture);
+
+            return new ContentResult
+            {
+                Content = "Updated User Successfully...",
                 ContentType = "application/json",
                 StatusCode = 200
             };
