@@ -108,10 +108,10 @@ public class GameInformationRouter
             JArray jsonResponse = await _gameService.RetrieveUserStatsForAllGames(userID);
 
 
-            string jsonResult = jsonResponse.ToString();
+            string jsonObject = $"{{ \"games\": {jsonResponse} }}";
             return new ContentResult
             {
-                Content = jsonResult,
+                Content = jsonObject,
                 ContentType = "application/json",
                 StatusCode = 200
             };

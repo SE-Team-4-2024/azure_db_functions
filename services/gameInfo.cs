@@ -134,7 +134,12 @@ public async Task UpdateGameCompleted(string gameID, string accuracy, string com
 
     public async Task<JObject> RetriveUserStats(string userID, string gameID)
     {
-        string selectQuery = "SELECT * FROM GameStatistics WHERE gameID = '" + gameID + "' AND userID = '" + userID + "' AND gameCompleted = 1";
+         string selectQuery = "SELECT TOP 5 * " +
+                                 "FROM GameStatistics " +
+                                 "WHERE gameID = '" + gameID + "' " +
+                                 "AND userID = '" + userID + "' " +
+                                 "AND gameCompleted = 1 " +
+                                 "ORDER BY noOfCorrectedAnswers DESC";
 
         List<string> gameObjects = await dbConnection.ExecuteQueryAsync(selectQuery);
         _logger.LogInformation(gameObjects.Count.ToString());
